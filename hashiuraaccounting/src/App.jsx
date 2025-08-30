@@ -379,7 +379,7 @@ function App() {
 
                   <TextField
                     fullWidth
-                    label="日付 (B列)"
+                    label="日付 ex)1日→1"
                     name="date"
                     value={formData.date}
                     onChange={handleChange}
@@ -387,7 +387,7 @@ function App() {
                   />
                   <TextField
                     fullWidth
-                    label="収入 (C列)"
+                    label="収入 ex)割り勘などの場合、収入に100入れ、支出に-100入れる"
                     name="income"
                     value={formData.income}
                     onChange={handleChange}
@@ -396,24 +396,33 @@ function App() {
                   />
                   <TextField
                     fullWidth
-                    label="支出 (D列)"
+                    label="支出 ex)100円→100"
                     name="expense"
                     value={formData.expense}
                     onChange={handleChange}
                     margin="normal"
                     color="error"
                   />
+                  <FormControl fullWidth margin="normal">
+                    <InputLabel>勘定科目 ▼で選択</InputLabel>
+                    <Select
+                      name="account"
+                      value={formData.account}
+                      onChange={handleChange}
+                    >
+                      <MenuItem value="食費">食費</MenuItem>
+                      <MenuItem value="交際費">交際費</MenuItem>
+                      <MenuItem value="交通費">交通費</MenuItem>
+                      <MenuItem value="雑費">雑費</MenuItem>
+                      <MenuItem value="趣味費">趣味費</MenuItem>
+                      <MenuItem value="家賃">家賃</MenuItem>
+                      <MenuItem value="光熱費">光熱費</MenuItem>
+                      <MenuItem value="保険料">保険料</MenuItem>
+                    </Select>
+                  </FormControl>
                   <TextField
                     fullWidth
-                    label="勘定科目 (E列)"
-                    name="account"
-                    value={formData.account}
-                    onChange={handleChange}
-                    margin="normal"
-                  />
-                  <TextField
-                    fullWidth
-                    label="備考 (F列)"
+                    label="備考 ex)ご飯等..."
                     name="note"
                     value={formData.note}
                     onChange={handleChange}
