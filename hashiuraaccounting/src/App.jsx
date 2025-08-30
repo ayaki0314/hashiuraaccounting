@@ -40,8 +40,6 @@ function App() {
   const [spreadsheetTitle, setSpreadsheetTitle] = useState("");
   const [sheetsInSpreadsheet, setSheetsInSpreadsheet] = useState([]);
   const [selectedSheetName, setSelectedSheetName] = useState("");
-  const [newSpreadsheetName, setNewSpreadsheetName] = useState("");
-  const [newSheetName, setNewSheetName] = useState("");
   const [formData, setFormData] = useState({
     date: "",
     income: "",
@@ -107,6 +105,8 @@ function App() {
     setSheetsList([]);
     setSelectedSpreadsheetId("");
     setSelectedSheetName("");
+    setSpreadsheetTitle("");
+    setSheetsInSpreadsheet([]);
   };
 
   // スプレッドシート一覧取得
@@ -123,12 +123,13 @@ function App() {
     }
   };
 
-  // シート一覧取得
+  // シート一覧取得（選択中のスプレッドシート内）
   const loadSheetsInSpreadsheet = async (spreadsheetId) => {
     try {
       const res = await gapi.client.sheets.spreadsheets.get({ spreadsheetId });
       setSpreadsheetTitle(res.result.properties.title);
       setSheetsInSpreadsheet(res.result.sheets.map((s) => s.properties.title));
+      setSelectedSheetName("");
     } catch (err) {
       console.error("❌ Error loading sheets in spreadsheet:", err);
     }
@@ -137,64 +138,6 @@ function App() {
   // 入力変更
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-
-  // ヘッダー行を追加する関数
-  const addHeaderRow = async (spreadsheetId, sheetName) => {
-    try {
-      await gapi.client.sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `${sheetName}!A1:F1`,
-        valueInputOption: "RAW",
-        resource: {
-          values: [["ID", "日付", "収入", "支出", "勘定科目", "備考"]],
-        },
-      });
-    } catch (err) {
-      console.error("❌ Error adding header row:", err);
-    }
-  };
-
-  // 新規スプレッドシート作成
-  const createNewSpreadsheet = async () => {
-    if (!newSpreadsheetName) return;
-    try {
-      const res = await gapi.client.sheets.spreadsheets.create({
-        properties: { title: newSpreadsheetName },
-      });
-      const id = res.result.spreadsheetId;
-      setSelectedSpreadsheetId(id);
-      setSpreadsheetTitle(newSpreadsheetName);
-      setSheetsInSpreadsheet(["シート1"]);
-      setSelectedSheetName("シート1");
-      setNewSpreadsheetName("");
-
-      // ヘッダー行を追加
-      await addHeaderRow(id, "シート1");
-
-      loadSheets();
-    } catch (err) {
-      console.error("❌ Error creating spreadsheet:", err);
-    }
-  };
-
-  // 新規シート作成
-  const createNewSheet = async () => {
-    if (!selectedSpreadsheetId || !newSheetName) return;
-    try {
-      await gapi.client.sheets.spreadsheets.batchUpdate({
-        spreadsheetId: selectedSpreadsheetId,
-        requests: [{ addSheet: { properties: { title: newSheetName } } }],
-      });
-      setSheetsInSpreadsheet([...sheetsInSpreadsheet, newSheetName]);
-      setSelectedSheetName(newSheetName);
-      setNewSheetName("");
-
-      // ヘッダー行を追加
-      await addHeaderRow(selectedSpreadsheetId, newSheetName);
-    } catch (err) {
-      console.error("❌ Error creating new sheet:", err);
-    }
-  };
 
   // 現在のA列で一番大きい番号を取る
   const getNextId = async () => {
@@ -275,7 +218,7 @@ function App() {
             variant="contained"
             onClick={handleSignIn}
             fullWidth
-            sx={{ mt: 4 }}
+            sx={{ mt: 4, textTransform: "none" }}
           >
             Googleでログイン
           </Button>
@@ -311,25 +254,22 @@ function App() {
                   </Select>
                 </FormControl>
 
-                <TextField
-                  fullWidth
-                  label="新しいスプレッドシート名"
-                  value={newSpreadsheetName}
-                  onChange={(e) => setNewSpreadsheetName(e.target.value)}
-                  sx={{ mt: 2 }}
-                />
-                <Button
-                  variant="outlined"
-                  onClick={createNewSpreadsheet}
-                  fullWidth
-                  sx={{ mt: 1 }}
-                >
-                  作成
-                </Button>
+                {/* 選択したスプレッドシートへのリンク表示 */}
+                {selectedSpreadsheetId && (
+                  <Typography sx={{ mt: 2 }}>
+                    <a
+                      href={`https://docs.google.com/spreadsheets/d/${selectedSpreadsheetId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      📄 選択したスプレッドシートを開く
+                    </a>
+                  </Typography>
+                )}
               </CardContent>
             </Card>
 
-            {/* シート選択 */}
+            {/* シート選択（既存のみ） */}
             {selectedSpreadsheetId && (
               <Card sx={{ mb: 3 }}>
                 <CardContent>
@@ -349,27 +289,11 @@ function App() {
                       ))}
                     </Select>
                   </FormControl>
-
-                  <TextField
-                    fullWidth
-                    label="新しいシート名"
-                    value={newSheetName}
-                    onChange={(e) => setNewSheetName(e.target.value)}
-                    sx={{ mt: 2 }}
-                  />
-                  <Button
-                    variant="outlined"
-                    onClick={createNewSheet}
-                    fullWidth
-                    sx={{ mt: 1 }}
-                  >
-                    作成
-                  </Button>
                 </CardContent>
               </Card>
             )}
 
-            {/* 入力フォーム */}
+            {/* 入力フォーム（残す機能） */}
             {selectedSheetName && (
               <Card>
                 <CardContent>
@@ -387,7 +311,7 @@ function App() {
                   />
                   <TextField
                     fullWidth
-                    label="収入 ex)割り勘などの場合、収入に100入れ、支出に-100入れる"
+                    label="収入 ex)割り勘は収入に1入れ支出に-1入れる"
                     name="income"
                     value={formData.income}
                     onChange={handleChange}
@@ -470,4 +394,3 @@ function App() {
 }
 
 export default App;
-
